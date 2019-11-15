@@ -28,15 +28,12 @@ int photocellPin1 = 0;
 int photocellPin2 = 1;
 int Reading1;
 int Reading2;
-int light1max = 0;
-int light2max = 0;
-int light1min = 1300;
-int light2min = 1300;
+int lightmax = 20;
+int lightmin = -20;
 int lightdiff;
-int lightdiffmax = -1000;
-int lightdiffmin = 1000;
+int degree;
+int prevdeg = 90;
 long prevtime;
-int count = 0;
 int temp;
 
 void setup() {
@@ -56,18 +53,7 @@ void setup() {
   temp = lightdiff;
   prevtime = millis();
   while ((millis() - prevtime) <= LoopTime) {
-    Reading1 = analogRead(photocellPin1);
-    Reading2 = analogRead(photocellPin2);
-    temp = Reading1-Reading2;
-    getLightinit();
-  }
-}
-void getLightinit() {
-  if (temp > lightdiffmax) {
-    lightdiffmax = temp;
-  }
-  if (temp < lightdiffmin) {
-    lightdiffmin = temp;
+     temp += (analogRead(photocellPin1) - analogRead(photocellPin2))/2;
   }
 }
 
@@ -75,6 +61,11 @@ void getLight() {
   Reading1 = analogRead(photocellPin1);
   Reading2 = analogRead(photocellPin2);
   lightdiff = Reading1 - Reading2;
+  if (lightdiff < lightmin) {
+    lightmin = lightdiff;
+  } else if (lightdiff > lightmax) {
+      lightmax = lightdiff;
+  }
 }
 void loop() {
   /*
@@ -84,22 +75,21 @@ void loop() {
    * the reading gives us darkness value
    */
   getLight();
-//  Serial.println(lightdiff);
-//  Serial.println(lightdiffmax);
-//  Serial.println(lightdiffmin);
-  if (lightdiff < (-20)) {
-    rotatemotor.write(89);
-    delay(3500);
-  } else if (lightdiff > 20) {
-    rotatemotor.write(91);
-    delay(3500);
-  } else {
-    rotatemotor.write(90);
-    delay(3500);
+  degree = map(lightdiff-temp, lightmin, lightmax, 0, 180);
+  if (degree > prevdeg + 5) {
+    rotatemotor.write(degree);
+    prevdeg = degree;
+    delay(500);
+  } else if (degree < prevdeg - 5) {
+    rotatemotor.write(degree);
+    prevdeg = degree;
+    delay(500);
   }
-  //if (lightdiff
   Serial.print("sensor 1:");
   Serial.println(Reading1);
   Serial.print("sensor 2:");
   Serial.println(Reading2);
+  while ((millis() - prevtime) <= LoopTime) {
+     delay(millis() - prevtime);
+  }
 }
